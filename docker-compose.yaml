@@ -1,0 +1,216 @@
+version: "3.8"
+
+services:
+  api-gtw:
+    build: ../api-gateway/
+    image: maciejwojtaczka/mini-book_api-gtw
+    container_name: api-gtw
+    restart: on-failure
+    ports:
+    - "8080:8080"
+    environment:
+      - USR_REG_ADDR=http://usr-reg:8080
+      - USR_CONN_ADDR=http://usr-conn:8080
+      - ANN_BRD_ADDR=http://ann-brd:8080
+      - TIMELINE_ADDR=http://timeline:8080
+      - MSG_BOX_ADDR=http://msg-box:8080
+      - WS_FACE_ADDR=ws://ws-face:8080/websocket
+
+  usr-reg:
+    build: ../user-registrar/
+    image: maciejwojtaczka/mini-book_usr-reg
+    container_name: usr-reg
+    restart: on-failure
+    environment:
+      - KAFKA_HOST=kafka
+    env_file:
+      - mysql.env
+    depends_on:
+      - mysql-db
+      - kafka
+
+  mysql-db:
+    image: 'mysql'
+    container_name: mysql-db
+    expose:
+      - 3306
+    env_file:
+      - mysql.env
+    volumes:
+    - mini-book-mysql:/var/lib/mysql
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: on-failure
+    ports:
+      - "8090:8080"
+
+  usr-conn:
+    build: ../user-connector/
+    image: maciejwojtaczka/mini-book_usr-conn
+    container_name: usr-conn
+    restart: on-failure
+    ports:
+      - "5081:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - USER_REGISTRAR_HOST=usr-reg:8080
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - kafka
+      - cassandra
+
+  ann-brd:
+    build: ../announcement-board/
+    image: maciejwojtaczka/mini-book_ann-brd
+    container_name: ann-brd
+    restart: on-failure
+    ports:
+    - "5082:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - cassandra
+      - kafka
+      - redis
+
+  timeline:
+    build: ../timeline/
+    image: maciejwojtaczka/mini-book_timeline
+    container_name: timeline
+    restart: on-failure
+    ports:
+    - "5083:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - ANNOUNCEMENT_BOARD_HOST=ann-brd:8080
+      - USER_CONNECTOR_HOST=usr-conn:8080
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - cassandra
+      - kafka
+
+  msg-box:
+    build: ../message-box/
+    image: maciejwojtaczka/mini-book_msg-box
+    container_name: msg-box
+    restart: on-failure
+    ports:
+      - "5084:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - cassandra
+      - kafka
+      - redis
+
+  front-push:
+    build: ../front-push/
+    image: maciejwojtaczka/mini-book_front-push
+    container_name: front-push
+    restart: on-failure
+    ports:
+      - "5085:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - kafka
+      - redis
+
+  ws-face:
+    build: ../ws-face/
+    image: maciejwojtaczka/mini-book_ws-face
+    container_name: ws-face
+    restart: on-failure
+    ports:
+      - "5086:5005"
+    environment:
+      - KAFKA_HOST=kafka
+      - CASSANDRA_CONTACT_POINT=cassandra
+      - REDIS_HOST=redis
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n
+    depends_on:
+      - kafka
+      - redis
+
+  redis:
+    image: redis
+    container_name: redis
+    expose:
+      - 6379
+
+  cassandra:
+    image: cassandra
+    container_name: cassandra
+    expose:
+      - 9042
+    volumes:
+    - mini-book-cassandra:/var/lib/cassandra
+
+#  cassandra-ui:
+#    image: delermando/docker-cassandra-web:v0.4.0
+#    container_name: cassandra-ui
+#    ports:
+#    - "3000:3000"
+#    environment:
+##  docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' cassandra
+#      CASSANDRA_HOST_IP: 172.21.0.5
+#      CASSANDRA_PORT: 9042
+#    depends_on:
+#      - cassandra
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    expose:
+      - 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    restart: on-failure
+    expose:
+      - 9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CREATE_TOPICS: "user-registered:1:1,connection-requested:1:1,connection-created:1:1"
+    depends_on:
+      - zookeeper
+
+  kafka-ui:
+    image: obsidiandynamics/kafdrop
+    container_name: kafka-ui
+    ports:
+    - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+      SERVER_SERVLET_CONTEXTPATH: /
+    depends_on:
+      - kafka
+
+volumes:
+  mini-book-mysql:
+  mini-book-cassandra:
