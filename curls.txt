@@ -8,6 +8,9 @@ curl --location --request POST 'localhost:8080/usr-reg/v1/users' \
     "surname": "testSurname"
 }'
 
+// connect to websocket in order to receive notifications
+wscat -c ws://localhost:8080/websocket --header 'principal:d4f9dd56-d249-476d-933d-1e5c47927d24'
+
 // make connection request
 curl --location --request POST 'localhost:8080/usr-conn/v1/connection-requests' \
 --header 'Content-Type: application/json' \
@@ -67,5 +70,3 @@ wscat -c ws://localhost:8080/websocket --header 'principal:d4f9dd56-d249-476d-93
 > {"type":"PING"}
 // send message
 > {"type":"MESSAGE", "payload":{"authorId":"6761141e-83ae-4bf7-8356-62b3c264c0b1", "content":"Hello!!", "conversationId":"b1198fbf-ebab-4d43-8cef-d790af72e8d4"}}
-
-ws-face-9931ffe6-160a-4a33-840d-03538d8c7efe
