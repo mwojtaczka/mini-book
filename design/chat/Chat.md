@@ -25,3 +25,8 @@
 `conversation_by_user` table has been introduced for user's conversation retrieval from single partition.
 `conversation_unread` table indicates which conversations contain unread messages
 [Cassandra schema](../../cassandra/message-box.cql)
+
+## Source code
+- [Message Box](https://github.com/mwojtaczka/msg-box)
+- [Front Push](https://github.com/mwojtaczka/front-push)
+- [Websocket Face](https://github.com/mwojtaczka/ws-face)

@@ -23,3 +23,6 @@ records should be stored within the same partition. This is why each connection 
 is duplicated.  
 Thanks to clustering key records are stored chronologically.  
 [Cassandra schema](../../cassandra/user-connector.cql)
+
+## Source code
+- [User Connector](https://github.com/mwojtaczka/usr-conn)

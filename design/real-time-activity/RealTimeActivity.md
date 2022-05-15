@@ -21,3 +21,7 @@ for communication with user.
 5. Front-Push service resolve each recipient to WebSocket-Face instance
 6. Front-Push service emits event to proper WebSocket-Face instance's topic
 7. WebSocket-Face service pushes event data to user
+
+## Source code
+- [Front Push](https://github.com/mwojtaczka/front-push)
+- [Websocket Face](https://github.com/mwojtaczka/ws-face)

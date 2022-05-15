@@ -33,5 +33,9 @@ Announcement-Board service stores announcements and its comments. Clustering key
 sorted chronologically.  
 [Announcement-Board data schema](../../cassandra/announcement-board.cql)  
 
+## Source code
+- [Timeline](https://github.com/mwojtaczka/timeline)
+- [Announcement Board](https://github.com/mwojtaczka/ann-brd)
+
 ## TODO
 Add feature for case when followee has great number of followers.
